@@ -1,5 +1,5 @@
 {
-  "name": "tinyoracle",
+  "name": "tinyoracleHttp",
   "version": "0.1.0",
   "description": "Simple data provider toolkit for Ethereum",
   "main": "index.js",
@@ -15,7 +15,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/axic/tinyoracle.git"
+    "url": "git+https://github.com/Robert-SZ/tinyoracleHttp.git"
   },
   "keywords": [
     "ethereum",
