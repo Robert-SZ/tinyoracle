@@ -47,37 +47,41 @@ console.log('Sender:   ' + opts.sender_address);
 
 var client = rpc.Client.$create(opts.rpc_port, opts.rpc_host);
 
-function parseData(res, callback, error){
-  const statusCode = res.statusCode;
-  const contentType = res.headers['content-type'];
+function callHttp(url, onSuccess, onError){
+    http.get(url, function(res) {
+    const statusCode = res.statusCode;
+    const contentType = res.headers['content-type'];
 
-  var error;
-  if (statusCode !== 200) {
-    error = new Error(`Request Failed.\n` +
-                      `Status Code: ${statusCode}`);
-  } else if (!/^application\/json/.test(contentType)) {
-    error = new Error(`Invalid content-type.\n` +
-                      `Expected application/json but received ${contentType}`);
-  }
-  if (error) {
-    console.log(error.message);
-    // consume response data to free up memory
-    res.resume();
-    return;
-  }
-
-  res.setEncoding('utf8');
-  var rawData = '';
-  res.on('data', function(chunk) { rawData += chunk; });
-  res.on('end', function() {
-    try {
-      var parsedData = JSON.parse(rawData);
-      console.log(parsedData);
-      callback(parsedData);
-    } catch (e) {
-      console.log(e.message);
-      error(e.message)
+    var error;
+    if (statusCode !== 200) {
+      error = new Error(`Request Failed.\n` +
+                        `Status Code: ${statusCode}`);
+    } else if (!/^application\/json/.test(contentType)) {
+      error = new Error(`Invalid content-type.\n` +
+                        `Expected application/json but received ${contentType}`);
     }
+    if (error) {
+      console.log(error.message);
+      // consume response data to free up memory
+      res.resume();
+      return;
+    }
+
+    res.setEncoding('utf8');
+    var rawData = '';
+    res.on('data', (chunk) => rawData += chunk);
+    res.on('end', () => {
+      try {
+        var parsedData = JSON.parse(rawData);
+        console.log(parsedData);
+        onSuccess(parsedData);
+      } catch (e) {
+        console.log(e.message);
+        onError(e.message);
+      }
+    });
+  }).on('error', function(e){
+    console.log(`Got error: ${e.message}`);
   });
 }
 
@@ -119,29 +123,28 @@ function pollForEvents(filterId) {
       console.log('Incoming request: ' + queryId.toString('hex'));
       console.log('  From: ' + sender);
       console.log('  Query: ' + query);
-        
-      http.get(query, function(res){
-          
-            parseData(res, onSuccess, onError);
-          
-            function onSuccess(response){
-                console.log('  Response: ' + response);
-                client.call('eth_sendTransaction', [{
-                from: opts.sender_address,
-                to: sender,
-                data: abi.rawEncode('__tinyOracleCallback', [ 'uint256', 'bytes' ], [ queryId, response ]).toString('hex'),
-                }], function(err, result) {
-                    if (err) {
-                    console.error('Sending response failed: ' + err);
-                    return;
-                }
-                }); 
-            }
-          
-            function onError(error){
-                console.error('Sending response failed: ' + error);
-            } 
-      });   
+
+
+      callHttp(query, onSuccess, onError);
+
+      function onSuccess(response){
+        console.log('  Response: ' + response);
+        client.call('eth_sendTransaction', [{
+        from: opts.sender_address,
+        to: sender,
+        data: abi.rawEncode('__tinyOracleCallback', [ 'uint256', 'bytes' ], [ queryId, response ]).toString('hex'),
+        }], function(err, result) {
+          if (err) {
+            console.error('Sending response failed: ' + err);
+            return;
+          }
+        });
+      }
+
+      function onError(error){
+        console.log('  Error: ' + error);
+      }
+  
     }
   });
 }
