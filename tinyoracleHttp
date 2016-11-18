@@ -50,7 +50,7 @@ function parseData(res, callback, error){
   const statusCode = res.statusCode;
   const contentType = res.headers['content-type'];
 
-  let error;
+  var error;
   if (statusCode !== 200) {
     error = new Error(`Request Failed.\n` +
                       `Status Code: ${statusCode}`);
@@ -66,11 +66,11 @@ function parseData(res, callback, error){
   }
 
   res.setEncoding('utf8');
-  let rawData = '';
-  res.on('data', (chunk) => rawData += chunk);
-  res.on('end', () => {
+  var rawData = '';
+  res.on('data', function(chunk) { rawData += chunk; });
+  res.on('end', function() {
     try {
-      let parsedData = JSON.parse(rawData);
+      var parsedData = JSON.parse(rawData);
       console.log(parsedData);
       callback(parsedData);
     } catch (e) {
