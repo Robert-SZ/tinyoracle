@@ -7,6 +7,7 @@ var program = require('commander');
 var rpc = require('json-rpc2');
 var ABI = require('ethereumjs-abi');
 var abi = new ABI();
+var http = require('http');
 
 program
     .version(pkg.version)
