@@ -8,7 +8,7 @@
     "json-rpc2" : "^1.0.0"
   },
   "bin": {
-    "tinyoracle": "tinyoracle"
+    "tinyoracleHttp": "tinyoracleHttp"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
