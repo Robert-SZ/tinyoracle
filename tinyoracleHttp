@@ -107,9 +107,10 @@ function pollForEvents(filterId) {
 
       console.log('Incoming request: ' + queryId.toString('hex'));
       console.log('  From: ' + sender);
-      console.log('  Query: ' + query);
+
 
       query = preproccessEvent(event, query);
+      console.log('  Query: ' + query);
       callHttp(query, onSuccess, onError);
 
       function onSuccess(response){
