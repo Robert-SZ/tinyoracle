@@ -8,7 +8,6 @@ var rpc = require('json-rpc2');
 var ABI = require('ethereumjs-abi');
 var abi = new ABI();
 var http = require('http');
-var Curl = require( 'node-libcurl' ).Curl;
 
 program
     .version(pkg.version)
@@ -47,23 +46,6 @@ console.log('Dispatch: ' + opts.dispatch_address);
 console.log('Sender:   ' + opts.sender_address);
 
 var client = rpc.Client.$create(opts.rpc_port, opts.rpc_host);
-
-function callCurl(url){
-    var curl = new Curl();
- 
-curl.setOpt( 'URL', 'www.google.com' );
-curl.setOpt( 'FOLLOWLOCATION', true );
- 
-curl.on( 'end', function( statusCode, body, headers ) {
- 
-    console.info( statusCode );
-    console.info( '---' );
-    console.info( body.length );
-    console.info( '---' );
-    console.info( this.getInfo( 'TOTAL_TIME' ) );
- 
-    this.close();
-});
  
 curl.on( 'error', curl.close.bind( curl ) );
 curl.perform();
@@ -149,7 +131,6 @@ function pollForEvents(filterId) {
       console.log('  From: ' + sender);
       console.log('  Query: ' + query);
 
-      callCurl(query);
       callHttp(query, onSuccess, onError);
 
       function onSuccess(response){
