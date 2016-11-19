@@ -49,17 +49,14 @@ var client = rpc.Client.$create(opts.rpc_port, opts.rpc_host);
 
 function callHttp(url, onSuccess, onError){
     
-    var request = require('request');
-    request(url, function (error, response, body) {
-        if (!error && response.statusCode == 200) {
-            console.log(body) // Show the HTML for the Google homepage. 
-            onSuccess(body);
-        }
-        else {
-            console.log("Error "+response.statusCode)
-            onError("Error "+response.statusCode);
-        }
-    });   
+request('http://www.google.com', function (error, response, body) {
+  if (!error && response.statusCode == 200) {
+    console.log(body) // Show the HTML for the Google homepage. 
+  }
+  else {
+    console.log("Error "+response.statusCode)
+  }
+})  
 }
 
 function pollForEvents(filterId) {
