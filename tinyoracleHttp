@@ -8,6 +8,7 @@ var rpc = require('json-rpc2');
 var ABI = require('ethereumjs-abi');
 var abi = new ABI();
 var http = require('http');
+var request = require('request');
 
 program
     .version(pkg.version)
@@ -48,6 +49,17 @@ console.log('Sender:   ' + opts.sender_address);
 var client = rpc.Client.$create(opts.rpc_port, opts.rpc_host);
 
 function callHttp(url, onSuccess, onError){
+    
+    var request = require('request');
+request('http://www.google.com', function (error, response, body) {
+  if (!error && response.statusCode == 200) {
+    console.log(body) // Show the HTML for the Google homepage. 
+  }
+  else {
+    console.log("Error "+response.statusCode)
+  }
+})
+    return;
     var req = http.get({hostname:url, headers: {}}, function(res) {
     const statusCode = res.statusCode;
     const contentType = res.headers['content-type'];
