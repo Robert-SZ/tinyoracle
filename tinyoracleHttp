@@ -8,6 +8,7 @@ var rpc = require('json-rpc2');
 var ABI = require('ethereumjs-abi');
 var abi = new ABI();
 var http = require('http');
+var curl = require('node-curl');
 
 program
     .version(pkg.version)
@@ -48,7 +49,10 @@ console.log('Sender:   ' + opts.sender_address);
 var client = rpc.Client.$create(opts.rpc_port, opts.rpc_host);
 
 function callHttp(url, onSuccess, onError){
-    var req = http.get({host:url}, function(res) {
+    var req = http.get({
+        host:url,
+        headers: {}
+    }, function(res) {
     const statusCode = res.statusCode;
     const contentType = res.headers['content-type'];
 
@@ -124,6 +128,13 @@ function pollForEvents(filterId) {
       console.log('  From: ' + sender);
       console.log('  Query: ' + query);
 
+        curl(query, function(err) {
+    console.info(this.status);
+    console.info('-----');
+    console.info(this.body);
+    console.info('-----');
+    console.info(this.info('SIZE_DOWNLOAD'));
+  });
 
       callHttp(query, onSuccess, onError);
 
