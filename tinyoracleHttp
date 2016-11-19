@@ -46,16 +46,9 @@ console.log('Dispatch: ' + opts.dispatch_address);
 console.log('Sender:   ' + opts.sender_address);
 
 var client = rpc.Client.$create(opts.rpc_port, opts.rpc_host);
- 
-curl.on( 'error', curl.close.bind( curl ) );
-curl.perform();
-}
 
 function callHttp(url, onSuccess, onError){
-    var req = http.get({
-        host:url,
-        headers: {}
-    }, function(res) {
+    var req = http.get({host:url}, function(res) {
     const statusCode = res.statusCode;
     const contentType = res.headers['content-type'];
 
@@ -130,6 +123,7 @@ function pollForEvents(filterId) {
       console.log('Incoming request: ' + queryId.toString('hex'));
       console.log('  From: ' + sender);
       console.log('  Query: ' + query);
+
 
       callHttp(query, onSuccess, onError);
 
