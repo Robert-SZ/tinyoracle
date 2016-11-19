@@ -55,8 +55,8 @@ request(url + '', function (error, response, body) {
       onSuccess(body);
   }
   else {
-    console.log("Error "+response.statusCode)
-      onError("Error "+response.statusCode);
+    console.log("Error "+error)
+      onError("Error "+error);
   }
 })  
 }
