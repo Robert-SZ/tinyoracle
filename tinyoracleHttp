@@ -61,6 +61,13 @@ request(url + '', function (error, response, body) {
 })  
 }
 
+function preproccessEvent(event, url){
+    var regexp = /{hash}/gi;
+    if(regexp.test(url)){
+        url=url.replace('{hash}',event.transactionHash);
+    }
+}
+
 function pollForEvents(filterId) {
   client.call('eth_getFilterChanges', [
     filterId,
@@ -100,7 +107,7 @@ function pollForEvents(filterId) {
       console.log('  From: ' + sender);
       console.log('  Query: ' + query);
 
-
+      preproccessEvent(event, query);
       callHttp(query, onSuccess, onError);
 
       function onSuccess(response){
