@@ -7,7 +7,6 @@ var program = require('commander');
 var rpc = require('json-rpc2');
 var ABI = require('ethereumjs-abi');
 var abi = new ABI();
-var http = require('http');
 var request = require('request');
 
 program
@@ -51,50 +50,16 @@ var client = rpc.Client.$create(opts.rpc_port, opts.rpc_host);
 function callHttp(url, onSuccess, onError){
     
     var request = require('request');
-request('http://www.google.com', function (error, response, body) {
-  if (!error && response.statusCode == 200) {
-    console.log(body) // Show the HTML for the Google homepage. 
-  }
-  else {
-    console.log("Error "+response.statusCode)
-  }
-})
-    return;
-    var req = http.get({hostname:url, headers: {}}, function(res) {
-    const statusCode = res.statusCode;
-    const contentType = res.headers['content-type'];
-
-    var error;
-    if (statusCode !== 200) {
-      error = new Error(`Request Failed.\n` +
-                        `Status Code: ${statusCode}`);
-    } else if (!/^application\/json/.test(contentType)) {
-      error = new Error(`Invalid content-type.\n` +
-                        `Expected application/json but received ${contentType}`);
-    }
-    if (error) {
-      console.log(error.message);
-      // consume response data to free up memory
-      res.resume();
-      return;
-    }
-
-    res.setEncoding('utf8');
-    var rawData = '';
-    res.on('data', (chunk) => rawData += chunk);
-    res.on('end', () => {
-      try {
-        var parsedData = JSON.parse(rawData);
-        console.log(parsedData);
-        onSuccess(parsedData);
-      } catch (e) {
-        console.log(e.message);
-        onError(e.message);
-      }
-    });
-  }).on('error', function(e){
-    console.log(`Got error: ${e.message}`);
-  });
+    request(url, function (error, response, body) {
+        if (!error && response.statusCode == 200) {
+            console.log(body) // Show the HTML for the Google homepage. 
+            onSuccess(body);
+        }
+        else {
+            console.log("Error "+response.statusCode)
+            onError("Error "+response.statusCode);
+        }
+    });   
 }
 
 function pollForEvents(filterId) {
