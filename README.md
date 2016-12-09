@@ -1,25 +1,170 @@
-# TinyOracle
+# TinyOracleHttp
 
-This is a simple example library serving as a guide on how to implement an oracle (aka data provider) with the current Ethereum infrastructure.
+##Использование
 
-What are data providers? Essentially Ethereum contracts run in their own walled garden. They can communicate with each other, can save and retrieve data stored on the blockchain, but external data can only enter the system by interaction from the user (e.g. passing data to a method). Data providers (or oracles) are contracts which have a connection to the outside world. Other contracts can request outside data from them. For example making HTTP GET/POST transactions.
+Как эта штука вообще работает. На вашей хостовой машине, где размернут etherium должен быть установлен nodejs.
+например это написано здесь: https://nodejs.org/en/download/package-manager/
 
-## Use case
+Код который дергает api написан здесь https://github.com/Robert-SZ/tinyoracleHttp/blob/master/tinyoracleHttp
+Там есть метод callHttp, если вам нужно просто дернуть api то его можно не менять.
+Этот метод дергает заданный url методом GET
 
-For example you want to enable your contract to query for external data, you might do the following (in Solidity):
+###Установка пакета tinyoracleHttp
+После установки nodejs сделайте
+npm -i g tinyoracleHttp
+
+Пакет будет установлен.
+
+###1. Компиляция скриптов через Browser Solidity https://ethereum.github.io/browser-solidity/
+
+Версия solidity version=soljson-v0.4.0+
+
+Создать в browser solidity 4 файла:
+
+1. api.sol
+В этой файле будет заменить адрес  lookupContract = 0xc031180519370e8b0f5f585e681fabfdb26cec72- это описано в разделе step by step
+```js
+//
+// This is the API file to be included by a user of this oracle
+//
+pragma solidity ^0.4.0;
+
+// This must match the signature in dispatch.sol
+contract TinyOracle {
+  function query(bytes _query) returns (uint256 id);
+}
+
+// This must match the signature in lookup.sol
+contract TinyOracleLookup {
+  function getQueryAddress() constant returns (address);
+  function getResponseAddress() constant returns (address);
+}
+
+// The actual part to be included in a client contract
+contract usingTinyOracle {
+  address constant lookupContract = 0xc031180519370e8b0f5f585e681fabfdb26cec72;
+
+  modifier onlyFromTinyOracle {
+    TinyOracleLookup lookup = TinyOracleLookup(lookupContract);
+    if (msg.sender != lookup.getResponseAddress())
+      throw;
+    _;
+  }
+
+  function queryTinyOracle(bytes query) internal returns (uint256 id) {
+    TinyOracleLookup lookup = TinyOracleLookup(lookupContract);
+    TinyOracle tinyOracle = TinyOracle(lookup.getQueryAddress());
+    return tinyOracle.query(query);
+  }
+}
+```
+2. dispatch.sol
+```js
+//
+// This is where the magic happens
+//
+// This contract will receive the actual query from the caller
+// contract. Assign a unique (well, sort of) identifier to each
+// incoming request, and emit an event our RPC client is listening
+// for.
+//
+pragma solidity ^0.4.0;
+
+contract TinyOracleDispatch {
+  event Incoming(uint256 id, address recipient, bytes query);
+
+  function query(bytes _query) external returns (uint256 id) {
+    id = uint256(sha3(block.number, now, _query, msg.sender));
+    Incoming(id, msg.sender, _query);
+  }
+
+  // The basic housekeeping
+
+  address owner;
+
+  modifier owneronly { if (msg.sender == owner) _; }
+
+  function setOwner(address _owner) owneronly {
+    owner = _owner;
+  }
+
+  function TinyOracleDispatch() {
+    owner = msg.sender;
+  }
+
+  function transfer(uint value) owneronly {
+    transfer(msg.sender, value);
+  }
+
+  function transfer(address _to, uint value) owneronly {
+    _to.send(value);
+  }
+
+  function kill() owneronly {
+    suicide(msg.sender);
+  }
+}
+```
+
+3. lookup.sol
+```js
+//
+// The lookup contract for storing both the query and responder addresses
+//
+pragma solidity ^0.4.0;
+contract TinyOracleLookup {
+  address owner;
+  address query;
+  address response;
+
+  modifier owneronly { if (msg.sender == owner) _; }
+
+  function setOwner(address _owner) owneronly {
+    owner = _owner;
+  }
+
+  function TinyOracleLookup() {
+    owner = msg.sender;
+  }
+
+  function setQueryAddress(address addr) owneronly {
+    query = addr;
+  }
+
+  function getQueryAddress() constant returns (address) {
+    return query;
+  }
+
+  function setResponseAddress(address addr) owneronly {
+    response = addr;
+  }
+
+  function getResponseAddress() constant returns (address) {
+    return response;
+  }
+
+  function kill() owneronly {
+    suicide(msg.sender);
+  }
+}
+```
+
+4. sample.sol
+
+Этот файл вам нужен только для того чтобы принять запрос определенного контракта с нектороми параметрами в данном случае параметр 1- url
 
 ```js
 import "api.sol";
 
-contract SampleClient is usingTinyOracle {
+contract SampleHttpClient is usingTinyOracle {
   bytes public response;
 
   function __tinyOracleCallback(uint256 id, bytes _response) onlyFromTinyOracle external {
     response = _response;
   }
 
-  function query() {
-    string memory tmp = "hello world";
+  function query(string url) {
+    string memory tmp = url;
     query(bytes(tmp));
   }
 
@@ -29,22 +174,9 @@ contract SampleClient is usingTinyOracle {
 }
 ```
 
-Whenever a query is submitted to ```queryTinyOracle```, it will end up being caught by a server side listener. After processing, the response will be sent back to a specific method (the above ```__tinyOracleCallback```) of the querying contract.
 
-```queryTinyOracle``` will return a uin256 identifier and the same will be available in the ```__tinyOracleCallback```. This is a unique transaction id to enable running multiple calls from a client, because the whole process is asynchronous.
 
-## Solution
 
-It is a fairly simple concept:
-- Listen for specific events
-- Transact with the caller
-
-To accomplish this we need the following:
-- A node accessible with RPC
-- A handful of contracts, one of them being our trusted the endpoint for on-chain transactions and emitting an event
-- Listening to that specific event over RPC
-- Sending back a transaction to a pre-agreed method in the caller contract
-- *Job done.*
 
 ## Step by step
 
